@@ -9,3 +9,6 @@ Depending on value type, it is sent as-it (string) or converted to a bigendian i
 
 
 
+## RMQSniffer
+
+Listens for messages on a rabbitMQ channel and dump its contents.
