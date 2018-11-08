@@ -13,6 +13,13 @@ import (
 
 var killed = false
 
+type Mode int
+
+const (
+	modeQueue    Mode = iota
+	modeExchange      = iota
+)
+
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
@@ -29,12 +36,23 @@ func saveJPEGFrame(body []byte) {
 }
 
 func main() {
+	var mode Mode
 
-	if len(os.Args) != 2 {
-		fmt.Println("Usage:" + os.Args[0] + " <queue name>")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage:" + os.Args[0] + " [-q <queue name> | -e <exchange name>]")
 		return
 	}
-	queueName := os.Args[1]
+	modeStr := os.Args[1]
+	name := os.Args[2]
+
+	if modeStr == "-e" {
+		mode = modeExchange
+	} else if modeStr == "-q" {
+		mode = modeQueue
+	} else {
+		log.Println("Invalid mode: " + modeStr)
+		return
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -53,15 +71,49 @@ func main() {
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
-	q, err := ch.QueueDeclare(
-		queueName, // name
-		false,     // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // no-wait
-		nil,       // arguments
-	)
-	failOnError(err, "Failed to declare a queue")
+	var q amqp.Queue
+	if mode == modeExchange {
+		//Create the exchange
+		err = ch.ExchangeDeclare(
+			name,     // name
+			"fanout", // type
+			true,     // durable
+			false,    // auto-deleted
+			false,    // internal
+			false,    // no-wait
+			nil,      // arguments
+		)
+		failOnError(err, "Failed to declare an exchange")
+		//Create the queue with a random name
+		q, err = ch.QueueDeclare(
+			"",    // name
+			false, // durable
+			false, // delete when usused
+			true,  // exclusive
+			false, // no-wait
+			nil,   // arguments
+		)
+		failOnError(err, "Failed to declare a queue")
+		//Bind this queue to this exchange so that exchange will publish here
+		err = ch.QueueBind(
+			q.Name, // queue name
+			"",     // routing key
+			name,   // exchange
+			false,
+			nil)
+		failOnError(err, "Failed to bind a queue")
+	} else if mode == modeQueue {
+
+		q, err = ch.QueueDeclare(
+			name,  // name
+			false, // durable
+			false, // delete when unused
+			false, // exclusive
+			false, // no-wait
+			nil,   // arguments
+		)
+		failOnError(err, "Failed to declare a queue")
+	}
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -76,7 +128,7 @@ func main() {
 
 	go func() {
 		for d := range msgs {
-			fmt.Printf("%s | %s | %s\n", time.Now(), queueName, d.ContentType)
+			fmt.Printf("%s: #%s <%s>\n", time.Now(), name, d.ContentType)
 			switch d.ContentType {
 			case "text/plain":
 				fmt.Println(d.Body)
@@ -88,7 +140,7 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("Listening for messages on %s\n", queueName)
+	fmt.Printf("Listening for messages on %s\n", name)
 
 	for {
 		if killed == true {
