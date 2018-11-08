@@ -22,10 +22,10 @@ func failOnError(err error, msg string) {
 func main() {
 
 	if len(os.Args) != 2 {
-		fmt.Println("Usage:" + os.Args[0] + " <chan name>")
+		fmt.Println("Usage:" + os.Args[0] + " <queue name>")
 		return
 	}
-	chanName := os.Args[1]
+	queueName := os.Args[1]
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -45,12 +45,12 @@ func main() {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		chanName, // name
-		false,    // durable
-		false,    // delete when unused
-		false,    // exclusive
-		false,    // no-wait
-		nil,      // arguments
+		queueName, // name
+		false,     // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
 
@@ -67,7 +67,7 @@ func main() {
 
 	go func() {
 		for d := range msgs {
-			fmt.Printf("%s | %s | %s\n", time.Now(), chanName, d.ContentType)
+			fmt.Printf("%s | %s | %s\n", time.Now(), queueName, d.ContentType)
 			switch d.ContentType {
 			case "text/plain":
 				fmt.Println(d.Body)
@@ -77,7 +77,7 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("Listening for messages on %s\n", chanName)
+	fmt.Printf("Listening for messages on %s\n", queueName)
 
 	for {
 		if killed == true {
