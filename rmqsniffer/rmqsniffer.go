@@ -19,6 +19,15 @@ func failOnError(err error, msg string) {
 	}
 }
 
+func saveJPEGFrame(body []byte) {
+	f, err := os.Create(fmt.Sprintf("frame_%s.jpg", time.Now().String()))
+	if err != nil {
+		return
+	}
+	f.Write(body)
+	f.Close()
+}
+
 func main() {
 
 	if len(os.Args) != 2 {
@@ -71,6 +80,8 @@ func main() {
 			switch d.ContentType {
 			case "text/plain":
 				fmt.Println(d.Body)
+			case "image/jpeg":
+				saveJPEGFrame(d.Body)
 			default:
 				fmt.Println(hex.Dump(d.Body))
 			}
