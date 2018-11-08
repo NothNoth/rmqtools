@@ -18,15 +18,15 @@ func failOnError(err error, msg string) {
 
 func main() {
 	if len(os.Args) != 5 {
-		fmt.Println("Usage: " + os.Args[0] + " <chan name> <content type> <value type> <value>")
+		fmt.Println("Usage: " + os.Args[0] + " <queue name> <content type> <value type> <value>")
 		fmt.Println("")
 		fmt.Println("Examples:")
-		fmt.Println(os.Args[0] + " log_chan text/plain string Hello")
+		fmt.Println(os.Args[0] + " log text/plain string Hello")
 		fmt.Println(os.Args[0] + " data_feed application/bytes int 42")
 		return
 	}
 
-	chanName := os.Args[1]
+	queueName := os.Args[1]
 	contentType := os.Args[2]
 	valueType := os.Args[3]
 	value := os.Args[4]
@@ -40,12 +40,12 @@ func main() {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		chanName, // name
-		false,    // durable
-		false,    // delete when unused
-		false,    // exclusive
-		false,    // no-wait
-		nil,      // arguments
+		queueName, // name
+		false,     // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
 
