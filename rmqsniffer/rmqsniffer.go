@@ -128,7 +128,7 @@ func main() {
 
 	go func() {
 		for d := range msgs {
-			fmt.Printf("%s: #%s <%s>\n", time.Now(), name, d.ContentType)
+			fmt.Printf("%s: #%s <%s> %d bytes\n", time.Now(), name, d.ContentType, len(d.Body))
 			switch d.ContentType {
 			case "text/plain":
 				fmt.Println(d.Body)

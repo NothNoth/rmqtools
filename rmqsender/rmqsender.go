@@ -100,7 +100,7 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		buf := make([]byte, 4)
+		buf = make([]byte, 4)
 		binary.BigEndian.PutUint32(buf, uint32(v))
 	}
 	err = ch.Publish(
